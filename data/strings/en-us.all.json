@@ -1,0 +1,19 @@
+{
+  "hello_message": { "other": "Hello msg" },
+  "hours" : {
+    "one" : "{{.Count}} hour",
+    "other" : "{{.Count}} hours"
+  },
+  "days" : {
+    "one" : "{{.Count}} day",
+    "other" : "{{.Count}} days"
+  },
+  "months" : {
+    "one" : "{{.Count}} month",
+    "other" : "{{.Count}} months"
+  },
+  "years" : {
+    "one" : "{{.Count}} year",
+    "other" : "{{.Count}} years"
+  }
+}

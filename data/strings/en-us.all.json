@@ -1,5 +1,6 @@
 {
   "hello_message": { "other": "Hello msg" },
+  "time_left_full" : { "other": "{{.Years}} {{.Months}} {{.Days}} {{.Hours}}" },
   "hours" : {
     "one" : "{{.Count}} hour",
     "other" : "{{.Count}} hours"

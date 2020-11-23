@@ -54,7 +54,12 @@ func processCompleteness(staticData *processing.StaticProccessStructs, questionI
 }
 
 func betCommand(data *processing.ProcessData) {
-	data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("test1"))
+	duration, isSuccessful, errorMessage := processing.ParseBetTime(data.Message)
+	if isSuccessful {
+		data.Static.Chat.SendMessage(data.ChatId, processing.GetBetDurationText(duration, data.Static.Trans))
+	} else {
+		data.Static.Chat.SendMessage(data.ChatId, errorMessage)
+	}
 }
 func betsCommand(data *processing.ProcessData) {
 	data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("test2"))

@@ -47,7 +47,7 @@ func ParseBetTime(timeText string) (duration time.Duration, isSuccessfull bool, 
 			}
 			value, err := strconv.Atoi(textToParse[:nextIdx])
 			if err != nil {
-				errorMessage = "invalid numeric value: " + textToParse[:nextIdx]
+				errorMessage = "Invalid numeric value: " + textToParse[:nextIdx]
 				isSuccessfull = false
 				return
 			}
@@ -57,7 +57,7 @@ func ParseBetTime(timeText string) (duration time.Duration, isSuccessfull bool, 
 				parsedTime.years = value
 			case 'm':
 				if daysOrHoursParsed {
-				errorMessage = "invalid order for months value (there are no minutes)"
+				errorMessage = "Invalid order for months value (there are no minutes)"
 					isSuccessfull = false
 					return
 				}
@@ -98,6 +98,32 @@ func getTimeLeftFromDuration(duration time.Duration) (resultTime timeLeft) {
 	return
 }
 
+func getTimeFormat(parsedTime *timeLeft) string {
+	if parsedTime.years > 0 {
+		if parsedTime.months > 0 {
+			return "time_left_years"
+		} else {
+			return "time_left_years_nomonths"
+		}
+	} else if parsedTime.months > 0 {
+		if parsedTime.days > 0 {
+			return "time_left_months"
+		} else {
+			return "time_left_months_nodays"
+		}
+	} else if parsedTime.days > 0 {
+		if parsedTime.hours > 0 {
+			return "time_left_days"
+		} else {
+			return "time_left_days_nohours"
+		}
+	} else if parsedTime.hours > 0 {
+		return "time_left_hours"
+	} else {
+		return "time_left_full"
+	}
+}
+
 func GetBetDurationText(duration time.Duration, trans i18n.TranslateFunc) string {
 	parsedTime := getTimeLeftFromDuration(duration)
 
@@ -108,5 +134,5 @@ func GetBetDurationText(duration time.Duration, trans i18n.TranslateFunc) string
 		"Hours": trans("hours", parsedTime.hours),
 	}
 
-	return trans("time_left_full", rulesData)
+	return trans(getTimeFormat(&parsedTime), rulesData)
 }

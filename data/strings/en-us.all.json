@@ -1,6 +1,13 @@
 {
   "hello_message": { "other": "Hello msg" },
   "time_left_full" : { "other": "{{.Years}} {{.Months}} {{.Days}} {{.Hours}}" },
+  "time_left_years" : { "other": "{{.Years}} {{.Months}}" },
+  "time_left_years_nomonths" : { "other": "{{.Years}}" },
+  "time_left_months" : { "other": "{{.Months}} {{.Days}}" },
+  "time_left_months_nodays" : { "other": "{{.Months}}" },
+  "time_left_days" : { "other": "{{.Days}} {{.Hours}}" },
+  "time_left_days_nohours" : { "other": "{{.Days}}" },
+  "time_left_hours" : { "other": "{{.Hours}}" },
   "hours" : {
     "one" : "{{.Count}} hour",
     "other" : "{{.Count}} hours"

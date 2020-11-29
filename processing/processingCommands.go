@@ -120,7 +120,7 @@ func getTimeFormat(parsedTime *timeLeft) string {
 	} else if parsedTime.hours > 0 {
 		return "time_left_hours"
 	} else {
-		return "time_left_full"
+		return "time_left_lessthanhour"
 	}
 }
 

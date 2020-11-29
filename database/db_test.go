@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
+	"time"
 )
 
 const (
@@ -140,29 +141,7 @@ func TestSanitizeString(t *testing.T) {
 	assert.Equal(testText, db.GetDatabaseVersion())
 }
 
-
-// func TestAddBet(t *testing.T) {
-// 	assert := require.New(t)
-// 	db := createDbAndConnect(t)
-// 	defer clearDb()
-// 	if db == nil {
-// 		t.Fail()
-// 		return
-// 	}
-// 	defer db.Disconnect()
-
-// 	var chatId1 int64 = 321
-// 	var chatId2 int64 = 123
-
-// 	var userId1 int64 = 3456
-
-// 	{
-// 		db.AddBet(chatId1, userId1, time, text)
-// 	}
-// }
-
-/*
-func TestAddAndRemoveProhibitedWord(t *testing.T) {
+func TestAddBet(t *testing.T) {
 	assert := require.New(t)
 	db := createDbAndConnect(t)
 	defer clearDb()
@@ -173,29 +152,31 @@ func TestAddAndRemoveProhibitedWord(t *testing.T) {
 	defer db.Disconnect()
 
 	var chatId1 int64 = 321
-	var chatId2 int64 = 123
 
-	prohibitedWord1 := "testWord1"
-	prohibitedWord2 := "testWord2"
+	endTime := time.Now().Add(time.Hour)
+	message := "test message"
+
+	betId := db.AddBet(chatId1, endTime, message)
 
 	{
-		db.AddProhibitedWord(chatId1, prohibitedWord1)
-		assert.Equal(1, len(db.GetProhibitedWords(chatId1)))
-		db.AddProhibitedWord(chatId1, prohibitedWord1)
-		assert.Equal(1, len(db.GetProhibitedWords(chatId1)))
-		assert.Equal(prohibitedWord1, db.GetProhibitedWords(chatId1)[0])
-		db.RemoveProhibitedWord(chatId1, prohibitedWord1)
-		assert.Equal(0, len(db.GetProhibitedWords(chatId1)))
+		gotChatId, gotEndTime, gotMessage := db.GetBetData(betId)
+		assert.Equal(chatId1, gotChatId)
+		assert.True(endTime.Equal(gotEndTime))
+		assert.Equal(message, gotMessage)
 	}
 
 	{
-		db.AddProhibitedWord(chatId2, prohibitedWord2)
-		assert.Equal(1, len(db.GetProhibitedWords(chatId2)))
-		assert.Equal(prohibitedWord2, db.GetProhibitedWords(chatId2)[0])
-		db.AddProhibitedWord(chatId2, prohibitedWord1)
-		assert.Equal(2, len(db.GetProhibitedWords(chatId2)))
-		db.RemoveProhibitedWord(chatId2, prohibitedWord2)
-		assert.Equal(1, len(db.GetProhibitedWords(chatId2)))
+		activeBets := db.GetActiveBets()
+		assert.Equal(1, len(activeBets))
+		if len(activeBets) > 0 {
+			assert.Equal(betId, activeBets[0])
+		}
+	}
+
+	db.RemoveBet(betId)
+
+	{
+		activeBets := db.GetActiveBets()
+		assert.Equal(0, len(activeBets))
 	}
 }
-*/

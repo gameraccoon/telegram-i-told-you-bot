@@ -6,6 +6,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"strings"
+	"time"
 )
 
 func init() {
@@ -50,7 +51,6 @@ func (database *Database) Connect(fileName string) error {
 	database.execQuery("CREATE TABLE IF NOT EXISTS" +
 		" users(messenger_id INTEGER NOT NULL" +
 		",chat_id INTEGER NOT NULL" +
-		",score INTEGER NOT NULL" +
 		",name TEXT NOT NULL" +
 		",PRIMARY KEY (messenger_id, chat_id)" +
 		")")
@@ -58,8 +58,18 @@ func (database *Database) Connect(fileName string) error {
 	database.execQuery("CREATE TABLE IF NOT EXISTS" +
 		" bets(id INTEGER NOT NULL PRIMARY KEY" +
 		",chat_id INTEGER NOT NULL" +
+		",end_time DATETIME NOT NULL" +
 		",bet_description TEXT NOT NULL" +
 		")")
+
+	database.execQuery("CREATE INDEX IF NOT EXISTS" +
+		" users_chat_id_index ON users(chat_id)")
+
+	database.execQuery("CREATE INDEX IF NOT EXISTS" +
+		" bets_chat_id_index ON bets(chat_id)")
+
+	database.execQuery("CREATE INDEX IF NOT EXISTS" +
+		" bets_end_time_index ON bets(end_time DESC)")
 
 	return nil
 }
@@ -168,7 +178,7 @@ func (database *Database) UpdateUser(chatId int64, messengerUserId int64, name s
 	sanitizedName := sanitizeString(name)
 
 	database.execQuery(fmt.Sprintf(
-		"INSERT OR IGNORE INTO users(messenger_id, chat_id, name, score) VALUES (%d, %d, '%s', 0);" +
+		"INSERT OR IGNORE INTO users(messenger_id, chat_id, name) VALUES (%d, %d, '%s');" +
 		"UPDATE users SET name='%s' WHERE messenger_id=%d",
 		messengerUserId,
 		chatId,
@@ -178,18 +188,76 @@ func (database *Database) UpdateUser(chatId int64, messengerUserId int64, name s
 	))
 }
 
-func (database *Database) AddBet(chatId int64, messengerUserId int64, timeHours int, text string) {
+func (database *Database) AddBet(chatId int64, endTime time.Time, message string) (betId int64) {
+	// sanitizedMessage := sanitizeString(message)
+	_, err := database.conn.Exec("INSERT INTO bets(chat_id, end_time, bet_description) VALUES (?, ?, ?)", chatId, endTime, message)
 
+	if err != nil {
+		log.Fatal(err.Error())
+		return -1
+	}
+
+	rows, err := database.conn.Query("SELECT id FROM bets ORDER BY id DESC LIMIT 1")
+
+	if err != nil {
+		log.Fatal(err.Error())
+		return -1
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		err := rows.Scan(&betId)
+		if err != nil {
+			log.Fatal(err.Error())
+			return -1
+		}
+
+		return
+	}
+	err = rows.Err()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return
 }
 
-func (database *Database) GetBetText(betId int64) (text string) {
+func (database *Database) RemoveBet(betId int64) {
+	database.execQuery(fmt.Sprintf("DELETE FROM bets WHERE id=%d", betId))
+}
+
+func (database *Database) GetBetData(betId int64) (chatId int64, endTime time.Time, message string) {
+	rows, err := database.conn.Query(fmt.Sprintf("SELECT chat_id, end_time, bet_description FROM bets WHERE id=%d", betId))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		err := rows.Scan(&chatId, &endTime, &message)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}
+
 	return
 }
 
 func (database *Database) GetActiveBets() (betIds []int64) {
-	return
-}
+	rows, err := database.conn.Query("SELECT id FROM bets ORDER BY end_time DESC")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer rows.Close()
 
-func (database *Database) GetBetRequirements(betId int64) (time int64) {
+	for rows.Next() {
+		var id int64
+		err := rows.Scan(&id)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
+		betIds = append(betIds, id)
+	}
+
 	return
 }

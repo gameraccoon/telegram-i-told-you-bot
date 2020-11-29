@@ -1,10 +1,12 @@
 package main
 
 import (
+	// "fmt"
 	// "github.com/gameraccoon/telegram-i-told-you-bot/database"
 	"github.com/gameraccoon/telegram-i-told-you-bot/processing"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"strings"
+	"time"
 )
 
 type ProcessorFunc func(*processing.ProcessData)
@@ -16,41 +18,34 @@ type Processors struct {
 	Private ProcessorFuncMap
 }
 
-func sendResults(staticData *processing.StaticProccessStructs, questionId int64, chatIds []int64) {
-	// variants := staticData.Db.GetQuestionVariants(questionId)
-	// answers := staticData.Db.GetQuestionAnswers(questionId)
-	// answersCount := staticData.Db.GetQuestionAnswersCount(questionId)
-
-	// var buffer bytes.Buffer
-	// buffer.WriteString(staticData.Trans("results_header"))
-	// buffer.WriteString(fmt.Sprintf("<i>%s</i>", staticData.Db.GetQuestionText(questionId)))
-
-	// for i, variant := range variants {
-	// 	buffer.WriteString(fmt.Sprintf("\n%s - %d (%d%%)", variant, answers[i], int64(100.0*float32(answers[i])/float32(answersCount))))
-	// }
-	// resultText := buffer.String()
-
-	// for _, chatId := range chatIds {
-	// 	staticData.Chat.SendMessage(chatId, resultText)
-	// }
+func sendResults(staticData *processing.StaticProccessStructs, betId int64) {
+	chatId, _, message := staticData.Db.GetBetData(betId)
+	staticData.Chat.SendMessage(chatId, message)
 }
 
-func completeBet(staticData *processing.StaticProccessStructs, questionId int64) {
-	// sendResults(staticData, questionId, chatIds)
+func completeBet(staticData *processing.StaticProccessStructs, betId int64) {
+	sendResults(staticData, betId)
+	staticData.Db.RemoveBet(betId)
+	delete(staticData.Timers, betId);
 }
 
-func isBetExpired(staticData *processing.StaticProccessStructs, questionId int64) bool {
-	if _, ok := staticData.Timers[questionId]; !ok {
+func isBetExpired(staticData *processing.StaticProccessStructs, betId int64) bool {
+	if _, ok := staticData.Timers[betId]; !ok {
 		return true
 	}
 
 	return false
 }
 
-func processCompleteness(staticData *processing.StaticProccessStructs, questionId int64) {
-	if isBetExpired(staticData, questionId) {
-		completeBet(staticData, questionId)
+func processCompleteness(staticData *processing.StaticProccessStructs, betId int64) {
+	if isBetExpired(staticData, betId) {
+		completeBet(staticData, betId)
 	}
+}
+
+func createBet(data *processing.ProcessData, endTime time.Time, message string) {
+	betId := data.Static.Db.AddBet(data.ChatId, endTime, message)
+	data.Static.Timers[betId] = endTime
 }
 
 func betCommand(data *processing.ProcessData) {
@@ -68,20 +63,25 @@ func betCommand(data *processing.ProcessData) {
 
 	duration, isSuccessful, errorMessage := processing.ParseBetTime(timeStr)
 	if isSuccessful {
+		createBet(data, time.Now().Add(duration), message)
 		data.Static.Chat.SendMessage(data.ChatId, processing.GetBetDurationText(duration, data.Static.Trans)+" "+message)
 	} else {
 		data.Static.Chat.SendMessage(data.ChatId, errorMessage)
 	}
 }
+
 func betsCommand(data *processing.ProcessData) {
 	data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("test2"))
 }
+
 func mybetsCommand(data *processing.ProcessData) {
 	data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("test3"))
 }
+
 func startCommand(data *processing.ProcessData) {
 	data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("hello_message"))
 }
+
 func commandsListCommand(data *processing.ProcessData) {
 	data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("commands_list"))
 }
@@ -149,6 +149,6 @@ func processUpdate(update *tgbotapi.Update, staticData *processing.StaticProcces
 	}
 }
 
-func processTimer(staticData *processing.StaticProccessStructs, questionId int64) {
-	processCompleteness(staticData, questionId)
+func processTimer(staticData *processing.StaticProccessStructs, betId int64) {
+	processCompleteness(staticData, betId)
 }

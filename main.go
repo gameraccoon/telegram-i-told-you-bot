@@ -45,10 +45,7 @@ func updateTimers(staticData *processing.StaticProccessStructs, mutex *sync.Mute
 
 	mutex.Lock()
 	for _, betId := range bets {
-		endTime := staticData.Db.GetBetRequirements(betId)
-		if endTime > 0 {
-			staticData.Timers[betId] = time.Unix(endTime, 0)
-		}
+		_, staticData.Timers[betId], _ = staticData.Db.GetBetData(betId)
 	}
 	mutex.Unlock()
 
